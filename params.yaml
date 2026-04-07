@@ -1,0 +1,30 @@
+# DVC tracks these — change any value to trigger re-run of downstream stages
+
+data:
+  n_rows: 5000
+  n_stores: 5
+  n_products: 10
+  test_split: 0.2
+
+models:
+  ar:
+    search:
+      n_samples: 5
+  arima:
+    search:
+      n_samples: 10
+  arimax:
+    search:
+      n_samples: 10
+  sarima:
+    search:
+      n_samples: 8
+  sarimax:
+    search:
+      n_samples: 8
+  prophet:
+    changepoint_prior_scale: 0.05
+  xgboost:
+    search:
+      n_iter: 20
+      cv: 3

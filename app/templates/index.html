@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retail Demand Forecasting</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --card:    #1a1d2e;
+      --border:  #2a2d3e;
+      --accent:  #6c63ff;
+      --green:   #00d4aa;
+      --yellow:  #f5a623;
+      --red:     #ff5252;
+      --text:    #e2e8f0;
+      --muted:   #8892a4;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1d2e 0%, #16192b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+    header h1 span { color: var(--text); }
+    .badge {
+      background: {{ '#00d4aa22' if model_ready else '#ff525222' }};
+      color: {{ 'var(--green)' if model_ready else 'var(--red)' }};
+      border: 1px solid {{ 'var(--green)' if model_ready else 'var(--red)' }};
+      border-radius: 20px; padding: 0.3rem 0.9rem; font-size: 0.8rem;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media(max-width:768px) { .grid-2,.grid-3 { grid-template-columns:1fr; } }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card-title {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
+    }
+
+    /* ── Metrics strip ── */
+    .metric { text-align: center; }
+    .metric .val { font-size: 2rem; font-weight: 800; color: var(--accent); }
+    .metric .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 1.2rem; }
+    label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+    input[type=number], select {
+      width: 100%; padding: 0.6rem 0.8rem;
+      background: #0f1117; color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.9rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    .btn {
+      width: 100%; padding: 0.75rem;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Model ranking ── */
+    .model-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+    }
+    .model-row:last-child { border: none; }
+    .model-name { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }
+    .model-rmse { font-size: 0.85rem; color: var(--muted); }
+    .model-best { color: var(--green); font-size: 0.7rem; font-weight: 700; }
+
+    /* ── Chart area ── */
+    .chart-wrap { position: relative; height: 280px; }
+
+    /* ── Inventory table ── */
+    .inv-table { width: 100%; border-collapse: collapse; }
+    .inv-table td { padding: 0.5rem 0.75rem; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
+    .inv-table td:last-child { text-align: right; font-weight: 700; }
+    .inv-order { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 0.7rem 1rem; border-radius: 8px;
+      font-size: 0.9rem; margin-bottom: 0.6rem;
+    }
+    .alert-danger  { background: #ff525218; border: 1px solid var(--red);    color: var(--red);    }
+    .alert-warning { background: #f5a62318; border: 1px solid var(--yellow); color: var(--yellow); }
+    .alert-success { background: #00d4aa18; border: 1px solid var(--green);  color: var(--green);  }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+    .empty .icon { font-size: 3rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📊 <span>Retail</span> Demand Forecasting</h1>
+  <span class="badge">{{ '✓ Model Ready' if model_ready else '✗ No Model' }}</span>
+</header>
+
+<div class="container">
+
+  <!-- ── Top metrics ── -->
+  {% if model_ready %}
+  <div class="grid-3" style="margin-bottom:1.5rem">
+    <div class="card metric">
+      <div class="val">{{ best_model | upper }}</div>
+      <div class="lbl">Best Model</div>
+    </div>
+    <div class="card metric">
+      <div class="val">{{ best_rmse }}</div>
+      <div class="lbl">Test RMSE</div>
+    </div>
+    <div class="card metric">
+      <div class="val">{{ all_models | length }}</div>
+      <div class="lbl">Models Trained</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid-2">
+
+    <!-- ── Left panel ── -->
+    <div style="display:flex; flex-direction:column; gap:1.5rem">
+
+      <!-- Forecast form -->
+      <div class="card">
+        <div class="card-title">🎯 Run Forecast</div>
+        <form method="post">
+          <div class="form-group">
+            <label>Forecast Horizon (days)</label>
+            <select name="horizon">
+              <option value="7"  {% if result and result.horizon==7  %}selected{% endif %}>7 days</option>
+              <option value="14" {% if result and result.horizon==14 %}selected{% endif %}>14 days</option>
+              <option value="30" {% if result and result.horizon==30 %}selected{% endif %}>30 days</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Current Stock (units)</label>
+            <input type="number" name="current_stock"
+                   value="{{ result.current_stock if result else 200 }}"
+                   min="0" step="1" />
+          </div>
+          <button class="btn" type="submit" {{ '' if model_ready else 'disabled' }}>
+            {{ '🔄 Re-run Forecast' if result else '🚀 Generate Forecast' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Model leaderboard -->
+      <div class="card">
+        <div class="card-title">🏆 Model Leaderboard</div>
+        {% if all_models %}
+          {% for m in all_models %}
+          <div class="model-row">
+            <div>
+              <span class="model-name">{{ m.name }}</span>
+              {% if loop.first %}<span class="model-best"> ★ BEST</span>{% endif %}
+            </div>
+            <span class="model-rmse">RMSE {{ "%.1f"|format(m.rmse) }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="color:var(--muted);font-size:0.85rem">Run the pipeline first to see rankings.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── Right panel ── -->
+    <div style="display:flex; flex-direction:column; gap:1.5rem">
+
+      {% if result %}
+
+      <!-- Forecast chart -->
+      <div class="card">
+        <div class="card-title">📈 Demand Forecast — Next {{ result.horizon }} Days</div>
+        <div class="chart-wrap">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Inventory decision -->
+      <div class="card">
+        <div class="card-title">📦 Inventory Decision</div>
+        <div style="display:flex; align-items:center; gap:2rem; margin-bottom:1rem">
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted)">RECOMMENDED ORDER</div>
+            <div class="inv-order">{{ result.inventory.order_quantity }} units</div>
+          </div>
+          <div style="flex:1">
+            {% for alert in result.inventory.alerts %}
+            <div class="alert alert-{{ alert.type }}">{{ alert.msg }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        <table class="inv-table">
+          <tr><td>Total forecast demand</td><td>{{ result.inventory.total_forecast }} units</td></tr>
+          <tr><td>Average daily demand</td><td>{{ result.inventory.avg_daily_demand }} units/day</td></tr>
+          <tr><td>Safety stock</td><td>{{ result.inventory.safety_stock }} units</td></tr>
+          <tr><td>Required stock</td><td>{{ result.inventory.required_stock }} units</td></tr>
+          <tr><td>Current stock</td><td>{{ result.inventory.current_stock }} units</td></tr>
+          <tr><td>Days of stock remaining</td><td>{{ result.inventory.days_of_stock }} days</td></tr>
+        </table>
+      </div>
+
+      {% else %}
+
+      <!-- Empty state -->
+      <div class="card empty">
+        <div class="icon">📉</div>
+        <div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem">No forecast yet</div>
+        <div>Set your parameters and click <strong>Generate Forecast</strong></div>
+        {% if not model_ready %}
+        <div style="margin-top:1rem;color:var(--red)">
+          ⚠️ Run the DVC pipeline first:<br/>
+          <code style="font-size:0.8rem">dvc repro</code>
+        </div>
+        {% endif %}
+      </div>
+
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if result %}
+<script>
+  const labels   = {{ result.future_dates | tojson }};
+  const forecast = {{ result.forecast | tojson }};
+  const avg      = {{ result.inventory.avg_daily_demand }};
+
+  new Chart(document.getElementById("forecastChart"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Forecast Demand",
+          data: forecast,
+          borderColor: "#6c63ff",
+          backgroundColor: "rgba(108,99,255,0.12)",
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: "#6c63ff",
+          fill: true,
+          tension: 0.35,
+        },
+        {
+          label: "Avg Demand",
+          data: Array(labels.length).fill(avg),
+          borderColor: "#00d4aa",
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: "#e2e8f0", font: { size: 12 } } } },
+      scales: {
+        x: { ticks: { color: "#8892a4" }, grid: { color: "#2a2d3e" } },
+        y: { ticks: { color: "#8892a4" }, grid: { color: "#2a2d3e" } }
+      }
+    }
+  });
+</script>
+{% endif %}
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+schema: '2.0'
+stages:
+  generate:
+    cmd: python dataset.py
+    deps:
+    - path: config.yaml
+      hash: md5
+      md5: 9f325e9b95152899e42f45df521755d5
+      size: 1892
+    - path: dataset.py
+      hash: md5
+      md5: 09f7b8f437a9d6953b1f0603af0c5612
+      size: 3516
+    params:
+      params.yaml:
+        data.n_products: 10
+        data.n_rows: 5000
+        data.n_stores: 5
+    outs:
+    - path: data/raw/sales.csv
+      hash: md5
+      md5: f8c08501fbc4c78a37f8c6d986c71da8
+      size: 151451
+  ingest:
+    cmd: python pipeline/ingest.py
+    deps:
+    - path: data/raw/sales.csv
+      hash: md5
+      md5: f8c08501fbc4c78a37f8c6d986c71da8
+      size: 151451
+    - path: pipeline/ingest.py
+      hash: md5
+      md5: 18ce10a57111abd47acfb55548d349d9
+      size: 2840
+    outs:
+    - path: data/interim/validated.csv
+      hash: md5
+      md5: 4eec3e75d338e4281daa4f753b26471b
+      size: 161451
+  features:
+    cmd: python pipeline/features.py
+    deps:
+    - path: config.yaml
+      hash: md5
+      md5: 9f325e9b95152899e42f45df521755d5
+      size: 1892
+    - path: data/interim/validated.csv
+      hash: md5
+      md5: 4eec3e75d338e4281daa4f753b26471b
+      size: 161451
+    - path: pipeline/features.py
+      hash: md5
+      md5: 62ab6420410e55f452e0f35717d6f3c5
+      size: 4223
+    params:
+      params.yaml:
+        data.test_split: 0.2
+    outs:
+    - path: data/processed/features.csv
+      hash: md5
+      md5: fc24d9a9831db3442aeabaa43e001af3
+      size: 1071491
+    - path: data/processed/scaler.pkl
+      hash: md5
+      md5: 72ef240cec8a25de723b234ab0f6eb80
+      size: 964
+  train:
+    cmd: python pipeline/train.py
+    deps:
+    - path: config.yaml
+      hash: md5
+      md5: 9f325e9b95152899e42f45df521755d5
+      size: 1892
+    - path: data/processed/features.csv
+      hash: md5
+      md5: fc24d9a9831db3442aeabaa43e001af3
+      size: 1071491
+    - path: pipeline/train.py
+      hash: md5
+      md5: cadb71a92b9af04593d53eecaa6cc910
+      size: 13281
+    params:
+      params.yaml:
+        models.ar.search.n_samples: 5
+        models.arima.search.n_samples: 10
+        models.arimax.search.n_samples: 10
+        models.prophet.changepoint_prior_scale: 0.05
+        models.sarima.search.n_samples: 8
+        models.sarimax.search.n_samples: 8
+        models.xgboost.search.cv: 3
+        models.xgboost.search.n_iter: 20
+    outs:
+    - path: models/ar.pkl
+      hash: md5
+      md5: 3d0b9ad3df1f0e881b9546ae47162eca
+      size: 23695
+    - path: models/arima.pkl
+      hash: md5
+      md5: e2d04d9892b89b46a3a2008572cc5c2b
+      size: 278790
+    - path: models/arimax.pkl
+      hash: md5
+      md5: 51be96a5c68bd21ca87c13eeaf0c5628
+      size: 290932
+    - path: models/metrics.json
+      hash: md5
+      md5: 8a431c53265486bec1fe7100dd289fa1
+      size: 892
+    - path: models/prophet.pkl
+      hash: md5
+      md5: ad4d66047377ff3fc52964c0f606c548
+      size: 18380
+    - path: models/sarima.pkl
+      hash: md5
+      md5: dc3dbfb8865e048b6b50e2555bf70d88
+      size: 3317460
+    - path: models/sarimax.pkl
+      hash: md5
+      md5: 8ee0bbdc36b40ba3f40b5720aaf21119
+      size: 2970253
+    - path: models/xgboost.pkl
+      hash: md5
+      md5: ce8f6ed8359eede4dbf71577240207b1
+      size: 484595
+  evaluate:
+    cmd: python pipeline/evaluate.py
+    deps:
+    - path: models/metrics.json
+      hash: md5
+      md5: 8a431c53265486bec1fe7100dd289fa1
+      size: 892
+    - path: pipeline/evaluate.py
+      hash: md5
+      md5: 42f23a5cdae8e1abd56513920225fa75
+      size: 3697
+    outs:
+    - path: models/best_model.pkl
+      hash: md5
+      md5: ce8f6ed8359eede4dbf71577240207b1
+      size: 484595
+    - path: models/best_model_info.json
+      hash: md5
+      md5: f27830387c33dd4be696c8f8ec70d128
+      size: 893
+    - path: reports/evaluation.json
+      hash: md5
+      md5: 143a7427173fc6b7a3795c0ec076ad78
+      size: 2657

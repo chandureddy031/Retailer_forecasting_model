@@ -1,0 +1,1 @@
+![alt text](mlops_pipeline_architecture.svg)

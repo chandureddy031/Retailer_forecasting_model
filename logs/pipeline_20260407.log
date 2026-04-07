@@ -1,0 +1,305 @@
+2026-04-07 04:44:26 | INFO     | dataset                   | Logger 'dataset' initialised → logs/pipeline_20260407.log
+2026-04-07 04:44:26 | INFO     | dataset                   | === STAGE: generate dataset ===
+2026-04-07 04:44:26 | INFO     | dataset                   | Generating 5 stores × 10 products × 100 days = 5000 rows
+2026-04-07 04:44:26 | INFO     | dataset                   | Dataset shape: (5000, 7)
+2026-04-07 04:44:26 | INFO     | dataset                   | Sales stats — min:1 max:340 mean:118.2
+2026-04-07 04:44:26 | DEBUG    | dataset                   | Date range: 2022-01-01 00:00:00 → 2022-04-10 00:00:00
+2026-04-07 04:44:26 | INFO     | dataset                   | Saved 5000 rows → data/raw/sales.csv
+2026-04-07 04:44:26 | INFO     | dataset                   | Dataset generation complete ✓
+2026-04-07 04:45:49 | INFO     | ingest                    | Logger 'ingest' initialised → logs/pipeline_20260407.log
+2026-04-07 04:45:49 | INFO     | ingest                    | === STAGE: ingest ===
+2026-04-07 04:45:49 | INFO     | ingest                    | Loading data from data/raw/sales.csv
+2026-04-07 04:45:49 | INFO     | ingest                    | Loaded shape: (5000, 7)
+2026-04-07 04:45:49 | DEBUG    | ingest                    | Columns: ['date', 'store_id', 'product_id', 'sales', 'price', 'promotion', 'is_holiday']
+2026-04-07 04:45:49 | INFO     | ingest                    | Running validation checks...
+2026-04-07 04:45:49 | INFO     | ingest                    | ✓ No null values
+2026-04-07 04:45:49 | INFO     | ingest                    | ✓ No duplicate rows
+2026-04-07 04:45:49 | INFO     | ingest                    | ✓ No negative sales
+2026-04-07 04:45:49 | INFO     | ingest                    | ✓ Data types enforced
+2026-04-07 04:45:49 | INFO     | ingest                    | Final shape after validation: (5000, 7)
+2026-04-07 04:45:49 | INFO     | ingest                    | Date range: 2022-01-01 → 2022-04-10
+2026-04-07 04:45:49 | INFO     | ingest                    | Stores: [np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+2026-04-07 04:45:49 | INFO     | ingest                    | Products: [np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(7), np.int64(8), np.int64(9), np.int64(10)]
+2026-04-07 04:45:49 | INFO     | ingest                    | Sales — mean:118.2 std:54.2 max:340.0
+2026-04-07 04:45:49 | INFO     | ingest                    | Saved validated data → data/interim/validated.csv
+2026-04-07 04:45:49 | INFO     | ingest                    | Ingest stage complete ✓
+2026-04-07 04:45:55 | INFO     | features                  | Logger 'features' initialised → logs/pipeline_20260407.log
+2026-04-07 04:45:55 | INFO     | features                  | === STAGE: features ===
+2026-04-07 04:45:55 | INFO     | features                  | Loaded 5000 rows for feature engineering
+2026-04-07 04:45:55 | INFO     | features                  | Adding calendar features...
+2026-04-07 04:45:55 | INFO     | features                  | ✓ Calendar: day_of_week, month, year, quarter, is_weekend
+2026-04-07 04:45:55 | INFO     | features                  | Adding lag features for lags: [1, 7, 14]
+2026-04-07 04:45:55 | DEBUG    | features                  |   Created lag_1 — nulls: 50
+2026-04-07 04:45:55 | DEBUG    | features                  |   Created lag_7 — nulls: 350
+2026-04-07 04:45:55 | DEBUG    | features                  |   Created lag_14 — nulls: 700
+2026-04-07 04:45:55 | INFO     | features                  | Adding rolling features for windows: [7, 14]
+2026-04-07 04:45:55 | DEBUG    | features                  |   Created rolling_mean_7, rolling_std_7
+2026-04-07 04:45:55 | DEBUG    | features                  |   Created rolling_mean_14, rolling_std_14
+2026-04-07 04:45:55 | INFO     | features                  | Dropped 700 rows with NaN (lag warm-up) → 4300 rows remain
+2026-04-07 04:45:55 | INFO     | features                  | Scaling numerical columns: ['lag_1', 'lag_7', 'lag_14', 'rolling_mean_7', 'rolling_mean_14', 'rolling_std_7', 'rolling_std_14', 'price', 'day_of_week', 'month', 'year', 'quarter']
+2026-04-07 04:45:55 | DEBUG    | features                  | Columns available for scaling: ['lag_1', 'lag_7', 'lag_14', 'rolling_mean_7', 'rolling_mean_14', 'rolling_std_7', 'rolling_std_14', 'price', 'day_of_week', 'month', 'year', 'quarter']
+2026-04-07 04:45:55 | INFO     | features                  | ✓ Scaler saved → data/processed/scaler.pkl
+2026-04-07 04:45:55 | INFO     | features                  | Saved features → data/processed/features.csv  shape:(4300, 19)
+2026-04-07 04:45:55 | INFO     | features                  | Features stage complete ✓
+2026-04-07 04:47:04 | INFO     | demo_train                | Logger 'demo_train' initialised → logs/pipeline_20260407.log
+2026-04-07 04:47:04 | INFO     | demo_train                | === STAGE: demo_train (7 models, sklearn-only) ===
+2026-04-07 04:47:04 | INFO     | demo_train                | Loaded features: (4300, 19)
+2026-04-07 04:47:04 | INFO     | demo_train                | Daily aggregated: 86 days
+2026-04-07 04:47:04 | INFO     | demo_train                | Training AR (LinearRegression on lags) ...
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   AR lag=14 RMSE=152.20
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   AR lag=1 RMSE=402.16
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   AR lag=21 RMSE=135.45
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   AR lag=3 RMSE=279.35
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   AR lag=7 RMSE=189.30
+2026-04-07 04:47:04 | INFO     | demo_train                |   AR best_lag=21 RMSE=135.45
+2026-04-07 04:47:04 | INFO     | demo_train                |   Saved → models/ar.pkl
+2026-04-07 04:47:04 | INFO     | demo_train                | ✓ ar         RMSE=135.45
+2026-04-07 04:47:04 | INFO     | demo_train                | Training ARIMA (Ridge + diff features) ...
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=0.01 RMSE=0.00
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=0.01 RMSE=0.00
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=100.0 RMSE=0.01
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=0.001 RMSE=0.00
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=100.0 RMSE=0.01
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=100.0 RMSE=0.01
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=10.0 RMSE=0.00
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=0.001 RMSE=0.00
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=10.0 RMSE=0.00
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMA alpha=1.0 RMSE=0.00
+2026-04-07 04:47:04 | INFO     | demo_train                |   ARIMA best_alpha=0.001 RMSE=0.00
+2026-04-07 04:47:04 | INFO     | demo_train                |   Saved → models/arima.pkl
+2026-04-07 04:47:04 | INFO     | demo_train                | ✓ arima      RMSE=0.00
+2026-04-07 04:47:04 | INFO     | demo_train                | Training ARIMAX (Ridge + exog) ...
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=0.001 RMSE=314.47
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=0.001 RMSE=314.47
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=0.001 RMSE=314.47
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=0.01 RMSE=312.23
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=0.01 RMSE=312.23
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=10.0 RMSE=308.44
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=10.0 RMSE=308.44
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=0.001 RMSE=314.47
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=10.0 RMSE=308.44
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   ARIMAX alpha=0.01 RMSE=312.23
+2026-04-07 04:47:04 | INFO     | demo_train                |   ARIMAX best_alpha=10.0 RMSE=308.44
+2026-04-07 04:47:04 | INFO     | demo_train                |   Saved → models/arimax.pkl
+2026-04-07 04:47:04 | INFO     | demo_train                | ✓ arimax     RMSE=308.44
+2026-04-07 04:47:04 | INFO     | demo_train                | Training SARIMA (ElasticNet + Fourier seasonality) ...
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 1.0, 'l1_ratio': 0.3} RMSE=267.59
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 1.0, 'l1_ratio': 0.9} RMSE=191.90
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 0.1, 'l1_ratio': 0.1} RMSE=187.29
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 0.01, 'l1_ratio': 0.7} RMSE=157.98
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 0.1, 'l1_ratio': 0.5} RMSE=172.86
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 0.01, 'l1_ratio': 0.3} RMSE=158.78
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 0.1, 'l1_ratio': 0.1} RMSE=187.29
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMA params={'alpha': 0.001, 'l1_ratio': 0.7} RMSE=157.54
+2026-04-07 04:47:04 | INFO     | demo_train                |   SARIMA best={'alpha': 0.001, 'l1_ratio': 0.7} RMSE=157.54
+2026-04-07 04:47:04 | INFO     | demo_train                |   Saved → models/sarima.pkl
+2026-04-07 04:47:04 | INFO     | demo_train                | ✓ sarima     RMSE=157.54
+2026-04-07 04:47:04 | INFO     | demo_train                | Training SARIMAX (ElasticNet + Fourier + exog) ...
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 0.001, 'l1_ratio': 0.5} RMSE=157.94
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 0.1, 'l1_ratio': 0.9} RMSE=159.55
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 0.1, 'l1_ratio': 0.1} RMSE=187.30
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 1.0, 'l1_ratio': 0.9} RMSE=191.90
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 0.001, 'l1_ratio': 0.5} RMSE=157.94
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 0.001, 'l1_ratio': 0.9} RMSE=158.27
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 0.1, 'l1_ratio': 0.9} RMSE=159.55
+2026-04-07 04:47:04 | DEBUG    | demo_train                |   SARIMAX params={'alpha': 0.1, 'l1_ratio': 0.9} RMSE=159.55
+2026-04-07 04:47:04 | INFO     | demo_train                |   SARIMAX best={'alpha': 0.001, 'l1_ratio': 0.5} RMSE=157.94
+2026-04-07 04:47:04 | INFO     | demo_train                |   Saved → models/sarimax.pkl
+2026-04-07 04:47:04 | INFO     | demo_train                | ✓ sarimax    RMSE=157.94
+2026-04-07 04:47:04 | INFO     | demo_train                | Training Prophet-sim (GradientBoosting + calendar/Fourier) ...
+2026-04-07 04:47:21 | INFO     | demo_train                |   Prophet-sim best={'subsample': 0.7, 'n_estimators': 100, 'max_depth': 5, 'learning_rate': 0.01} RMSE=347.73
+2026-04-07 04:47:21 | INFO     | demo_train                |   Saved → models/prophet.pkl
+2026-04-07 04:47:21 | INFO     | demo_train                | ✓ prophet    RMSE=347.73
+2026-04-07 04:47:21 | INFO     | demo_train                | Training XGBoost-sim (RandomForest + RandomizedSearch) ...
+2026-04-07 04:47:53 | INFO     | demo_train                |   XGBoost-sim best={'n_estimators': 200, 'min_samples_split': 2, 'max_features': 0.7, 'max_depth': 7} RMSE=11.75
+2026-04-07 04:47:53 | INFO     | demo_train                |   Saved → models/xgboost.pkl
+2026-04-07 04:47:53 | INFO     | demo_train                | ✓ xgboost    RMSE=11.75
+2026-04-07 04:47:53 | INFO     | demo_train                | Metrics saved → models/metrics.json
+2026-04-07 04:47:53 | INFO     | demo_train                | 
+=======================================================
+2026-04-07 04:47:53 | INFO     | demo_train                | FINAL MODEL RANKINGS
+2026-04-07 04:47:53 | INFO     | demo_train                | =======================================================
+2026-04-07 04:47:53 | INFO     | demo_train                |   arima        RMSE = 0.00
+2026-04-07 04:47:53 | INFO     | demo_train                |   xgboost      RMSE = 11.75
+2026-04-07 04:47:53 | INFO     | demo_train                |   ar           RMSE = 135.45
+2026-04-07 04:47:53 | INFO     | demo_train                |   sarima       RMSE = 157.54
+2026-04-07 04:47:53 | INFO     | demo_train                |   sarimax      RMSE = 157.94
+2026-04-07 04:47:53 | INFO     | demo_train                |   arimax       RMSE = 308.44
+2026-04-07 04:47:53 | INFO     | demo_train                |   prophet      RMSE = 347.73
+2026-04-07 04:47:53 | INFO     | demo_train                | =======================================================
+2026-04-07 04:47:53 | INFO     | demo_train                | Demo train complete ✓
+2026-04-07 04:47:57 | INFO     | evaluate                  | Logger 'evaluate' initialised → logs/pipeline_20260407.log
+2026-04-07 04:47:57 | INFO     | evaluate                  | === STAGE: evaluate ===
+2026-04-07 04:47:57 | INFO     | evaluate                  | Loaded metrics for 7 models
+2026-04-07 04:47:57 | INFO     | evaluate                  | 
+=======================================================
+2026-04-07 04:47:57 | INFO     | evaluate                  | FINAL MODEL RANKING (lower RMSE = better)
+2026-04-07 04:47:57 | INFO     | evaluate                  | =======================================================
+2026-04-07 04:47:57 | INFO     | evaluate                  |   #1  arima         RMSE = 0.00 ← BEST
+2026-04-07 04:47:57 | INFO     | evaluate                  |   #2  xgboost       RMSE = 11.75
+2026-04-07 04:47:57 | INFO     | evaluate                  |   #3  ar            RMSE = 135.45
+2026-04-07 04:47:57 | INFO     | evaluate                  |   #4  sarima        RMSE = 157.54
+2026-04-07 04:47:57 | INFO     | evaluate                  |   #5  sarimax       RMSE = 157.94
+2026-04-07 04:47:57 | INFO     | evaluate                  |   #6  arimax        RMSE = 308.44
+2026-04-07 04:47:57 | INFO     | evaluate                  |   #7  prophet       RMSE = 347.73
+2026-04-07 04:47:57 | INFO     | evaluate                  | =======================================================
+2026-04-07 04:47:57 | INFO     | evaluate                  | Best model: arima  RMSE=0.00
+2026-04-07 04:47:57 | INFO     | evaluate                  | ✓ Promoted arima.pkl → best_model.pkl
+2026-04-07 04:47:57 | INFO     | evaluate                  | Best model info saved → models/best_model_info.json
+2026-04-07 04:47:57 | INFO     | evaluate                  | Full evaluation report → reports/evaluation.json
+2026-04-07 04:47:57 | INFO     | evaluate                  | Evaluate stage complete ✓
+2026-04-07 10:24:37 | INFO     | app                       | Logger 'app' initialised → logs/pipeline_20260407.log
+2026-04-07 10:25:01 | INFO     | dataset                   | Logger 'dataset' initialised → logs/pipeline_20260407.log
+2026-04-07 10:25:01 | INFO     | dataset                   | === STAGE: generate dataset ===
+2026-04-07 10:25:01 | INFO     | dataset                   | Generating 5 stores × 10 products × 100 days = 5000 rows
+2026-04-07 10:25:01 | INFO     | dataset                   | Dataset shape: (5000, 7)
+2026-04-07 10:25:01 | INFO     | dataset                   | Sales stats — min:1 max:340 mean:118.2
+2026-04-07 10:25:01 | DEBUG    | dataset                   | Date range: 2022-01-01 00:00:00 → 2022-04-10 00:00:00
+2026-04-07 10:25:01 | INFO     | dataset                   | Saved 5000 rows → data/raw/sales.csv
+2026-04-07 10:25:01 | INFO     | dataset                   | Dataset generation complete ✓
+2026-04-07 10:25:03 | INFO     | ingest                    | Logger 'ingest' initialised → logs/pipeline_20260407.log
+2026-04-07 10:25:03 | INFO     | ingest                    | === STAGE: ingest ===
+2026-04-07 10:25:03 | INFO     | ingest                    | Loading data from data/raw/sales.csv
+2026-04-07 10:25:03 | INFO     | ingest                    | Loaded shape: (5000, 7)
+2026-04-07 10:25:03 | DEBUG    | ingest                    | Columns: ['date', 'store_id', 'product_id', 'sales', 'price', 'promotion', 'is_holiday']
+2026-04-07 10:25:03 | INFO     | ingest                    | Running validation checks...
+2026-04-07 10:25:03 | INFO     | ingest                    | ✓ No null values
+2026-04-07 10:25:03 | INFO     | ingest                    | ✓ No duplicate rows
+2026-04-07 10:25:03 | INFO     | ingest                    | ✓ No negative sales
+2026-04-07 10:25:03 | INFO     | ingest                    | ✓ Data types enforced
+2026-04-07 10:25:03 | INFO     | ingest                    | Final shape after validation: (5000, 7)
+2026-04-07 10:25:03 | INFO     | ingest                    | Date range: 2022-01-01 → 2022-04-10
+2026-04-07 10:25:03 | INFO     | ingest                    | Stores: [1, 2, 3, 4, 5]
+2026-04-07 10:25:03 | INFO     | ingest                    | Products: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+2026-04-07 10:25:03 | INFO     | ingest                    | Sales — mean:118.2 std:54.2 max:340.0
+2026-04-07 10:25:03 | INFO     | ingest                    | Saved validated data → data/interim/validated.csv
+2026-04-07 10:25:03 | INFO     | ingest                    | Ingest stage complete ✓
+2026-04-07 10:25:07 | INFO     | features                  | Logger 'features' initialised → logs/pipeline_20260407.log
+2026-04-07 10:25:07 | INFO     | features                  | === STAGE: features ===
+2026-04-07 10:25:07 | INFO     | features                  | Loaded 5000 rows for feature engineering
+2026-04-07 10:25:07 | INFO     | features                  | Adding calendar features...
+2026-04-07 10:25:07 | INFO     | features                  | ✓ Calendar: day_of_week, month, year, quarter, is_weekend
+2026-04-07 10:25:07 | INFO     | features                  | Adding lag features for lags: [1, 7, 14]
+2026-04-07 10:25:07 | DEBUG    | features                  |   Created lag_1 — nulls: 50
+2026-04-07 10:25:07 | DEBUG    | features                  |   Created lag_7 — nulls: 350
+2026-04-07 10:25:07 | DEBUG    | features                  |   Created lag_14 — nulls: 700
+2026-04-07 10:25:07 | INFO     | features                  | Adding rolling features for windows: [7, 14]
+2026-04-07 10:25:07 | DEBUG    | features                  |   Created rolling_mean_7, rolling_std_7
+2026-04-07 10:25:07 | DEBUG    | features                  |   Created rolling_mean_14, rolling_std_14
+2026-04-07 10:25:07 | INFO     | features                  | Dropped 700 rows with NaN (lag warm-up) → 4300 rows remain
+2026-04-07 10:25:07 | INFO     | features                  | Scaling numerical columns: ['lag_1', 'lag_7', 'lag_14', 'rolling_mean_7', 'rolling_mean_14', 'rolling_std_7', 'rolling_std_14', 'price', 'day_of_week', 'month', 'year', 'quarter']
+2026-04-07 10:25:07 | DEBUG    | features                  | Columns available for scaling: ['lag_1', 'lag_7', 'lag_14', 'rolling_mean_7', 'rolling_mean_14', 'rolling_std_7', 'rolling_std_14', 'price', 'day_of_week', 'month', 'year', 'quarter']
+2026-04-07 10:25:07 | INFO     | features                  | ✓ Scaler saved → data/processed/scaler.pkl
+2026-04-07 10:25:07 | INFO     | features                  | Saved features → data/processed/features.csv  shape:(4300, 19)
+2026-04-07 10:25:07 | INFO     | features                  | Features stage complete ✓
+2026-04-07 10:25:13 | INFO     | train                     | Logger 'train' initialised → logs/pipeline_20260407.log
+2026-04-07 10:25:13 | INFO     | train                     | === STAGE: train (all 7 models) ===
+2026-04-07 10:25:13 | INFO     | train                     | Loaded features: (4300, 19)
+2026-04-07 10:25:13 | INFO     | train                     | Daily aggregated series: 86 days
+2026-04-07 10:25:13 | INFO     | train                     | Training AR ...
+2026-04-07 10:25:13 | DEBUG    | train                     |   AR lag=5 RMSE=385.68
+2026-04-07 10:25:13 | DEBUG    | train                     |   AR lag=2 RMSE=528.95
+2026-04-07 10:25:13 | DEBUG    | train                     |   AR lag=7 RMSE=354.33
+2026-04-07 10:25:13 | DEBUG    | train                     |   AR lag=14 RMSE=227.91
+2026-04-07 10:25:13 | DEBUG    | train                     |   AR lag=21 RMSE=188.97
+2026-04-07 10:25:13 | INFO     | train                     |   AR best lag=21 test_RMSE=188.97
+2026-04-07 10:25:13 | INFO     | train                     |   Saved model → models\ar.pkl
+2026-04-07 10:25:13 | INFO     | train                     | Training ARIMA ...
+2026-04-07 10:25:13 | DEBUG    | train                     |   [ARIMA] order=(3, 0, 0) seas=(0, 0, 0, 0) AIC=942.9
+2026-04-07 10:25:13 | DEBUG    | train                     |   [ARIMA] order=(2, 0, 1) seas=(0, 0, 0, 0) AIC=973.0
+2026-04-07 10:25:13 | DEBUG    | train                     |   [ARIMA] order=(0, 0, 1) seas=(0, 0, 0, 0) AIC=1253.3
+2026-04-07 10:25:13 | DEBUG    | train                     |   [ARIMA] order=(2, 1, 0) seas=(0, 0, 0, 0) AIC=941.0
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMA] order=(3, 1, 2) seas=(0, 0, 0, 0) AIC=843.4
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMA] order=(0, 1, 0) seas=(0, 0, 0, 0) AIC=990.5
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMA] order=(1, 1, 1) seas=(0, 0, 0, 0) AIC=955.6
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMA] order=(0, 1, 2) seas=(0, 0, 0, 0) AIC=933.4
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMA] order=(2, 1, 2) seas=(0, 0, 0, 0) AIC=843.9
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMA] order=(0, 0, 2) seas=(0, 0, 0, 0) AIC=1181.2
+2026-04-07 10:25:14 | INFO     | train                     |   [ARIMA] Best order=((3, 1, 2), (0, 0, 0, 0))  AIC=843.4
+2026-04-07 10:25:14 | INFO     | train                     |   ARIMA test_RMSE=495.38
+2026-04-07 10:25:14 | INFO     | train                     |   Saved model → models\arima.pkl
+2026-04-07 10:25:14 | INFO     | train                     | Training ARIMAX ...
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(0, 0, 2) seas=(0, 0, 0, 0) AIC=946.8
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(2, 1, 2) seas=(0, 0, 0, 0) AIC=858.0
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(2, 0, 0) seas=(0, 0, 0, 0) AIC=950.6
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(1, 0, 1) seas=(0, 0, 0, 0) AIC=974.2
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(3, 1, 0) seas=(0, 0, 0, 0) AIC=892.9
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(1, 0, 2) seas=(0, 0, 0, 0) AIC=943.9
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(2, 0, 1) seas=(0, 0, 0, 0) AIC=950.0
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(2, 0, 2) seas=(0, 0, 0, 0) AIC=910.7
+2026-04-07 10:25:14 | DEBUG    | train                     |   [ARIMAX] order=(0, 1, 1) seas=(0, 0, 0, 0) AIC=964.1
+2026-04-07 10:25:15 | DEBUG    | train                     |   [ARIMAX] order=(3, 1, 1) seas=(0, 0, 0, 0) AIC=878.4
+2026-04-07 10:25:15 | INFO     | train                     |   [ARIMAX] Best order=((2, 1, 2), (0, 0, 0, 0))  AIC=858.0
+2026-04-07 10:25:15 | INFO     | train                     |   ARIMAX test_RMSE=470.07
+2026-04-07 10:25:15 | INFO     | train                     |   Saved model → models\arimax.pkl
+2026-04-07 10:25:15 | INFO     | train                     | Training SARIMA ...
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(2, 1, 0) seas=(0, 1, 0, 7) AIC=791.0
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(0, 0, 0) seas=(0, 0, 0, 7) AIC=1355.9
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(0, 0, 1) seas=(0, 0, 0, 7) AIC=1253.3
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(1, 1, 2) seas=(0, 1, 0, 7) AIC=779.2
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(2, 1, 1) seas=(1, 0, 1, 7) AIC=767.7
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(0, 1, 1) seas=(0, 1, 1, 7) AIC=674.6
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(0, 1, 1) seas=(0, 0, 0, 7) AIC=956.7
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMA] order=(2, 0, 0) seas=(1, 0, 0, 7) AIC=802.3
+2026-04-07 10:25:15 | INFO     | train                     |   [SARIMA] Best order=((0, 1, 1), (0, 1, 1, 7))  AIC=674.6
+2026-04-07 10:25:15 | INFO     | train                     |   SARIMA test_RMSE=526.47
+2026-04-07 10:25:15 | INFO     | train                     |   Saved model → models\sarima.pkl
+2026-04-07 10:25:15 | INFO     | train                     | Training SARIMAX ...
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMAX] order=(1, 0, 1) seas=(0, 1, 1, 7) AIC=693.6
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMAX] order=(1, 1, 0) seas=(1, 1, 0, 7) AIC=708.8
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMAX] order=(0, 0, 1) seas=(0, 1, 1, 7) AIC=740.4
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMAX] order=(1, 0, 0) seas=(1, 1, 1, 7) AIC=711.5
+2026-04-07 10:25:15 | DEBUG    | train                     |   [SARIMAX] order=(1, 0, 0) seas=(0, 1, 0, 7) AIC=828.8
+2026-04-07 10:25:16 | DEBUG    | train                     |   [SARIMAX] order=(2, 0, 2) seas=(1, 0, 1, 7) AIC=808.9
+2026-04-07 10:25:16 | DEBUG    | train                     |   [SARIMAX] order=(1, 0, 0) seas=(0, 0, 1, 7) AIC=871.5
+2026-04-07 10:25:16 | DEBUG    | train                     |   [SARIMAX] order=(0, 0, 2) seas=(0, 1, 0, 7) AIC=806.5
+2026-04-07 10:25:16 | INFO     | train                     |   [SARIMAX] Best order=((1, 0, 1), (0, 1, 1, 7))  AIC=693.6
+2026-04-07 10:25:16 | INFO     | train                     |   SARIMAX test_RMSE=391.61
+2026-04-07 10:25:16 | INFO     | train                     |   Saved model → models\sarimax.pkl
+2026-04-07 10:25:16 | INFO     | train                     | Training Prophet ...
+2026-04-07 10:25:17 | INFO     | train                     |   Prophet test_RMSE=14677.81
+2026-04-07 10:25:17 | INFO     | train                     |   Saved model → models\prophet.pkl
+2026-04-07 10:25:17 | INFO     | train                     | Training XGBoost with RandomizedSearchCV ...
+2026-04-07 10:25:26 | INFO     | train                     |   XGBoost best_params={'subsample': 0.8, 'n_estimators': 300, 'min_child_weight': 5, 'max_depth': 4, 'learning_rate': 0.1, 'colsample_bytree': 1.0}
+2026-04-07 10:25:26 | INFO     | train                     |   XGBoost test_RMSE=10.78
+2026-04-07 10:25:26 | INFO     | train                     |   Saved model → models\xgboost.pkl
+2026-04-07 10:25:26 | INFO     | train                     | Metrics saved → models/metrics.json
+2026-04-07 10:25:26 | INFO     | train                     | 
+==================================================
+2026-04-07 10:25:26 | INFO     | train                     | MODEL COMPARISON (test RMSE)
+2026-04-07 10:25:26 | INFO     | train                     | ==================================================
+2026-04-07 10:25:26 | INFO     | train                     |   xgboost      RMSE = 10.78
+2026-04-07 10:25:26 | INFO     | train                     |   ar           RMSE = 188.97
+2026-04-07 10:25:26 | INFO     | train                     |   sarimax      RMSE = 391.61
+2026-04-07 10:25:26 | INFO     | train                     |   arimax       RMSE = 470.07
+2026-04-07 10:25:26 | INFO     | train                     |   arima        RMSE = 495.38
+2026-04-07 10:25:26 | INFO     | train                     |   sarima       RMSE = 526.47
+2026-04-07 10:25:26 | INFO     | train                     |   prophet      RMSE = 14677.81
+2026-04-07 10:25:26 | INFO     | train                     | ==================================================
+2026-04-07 10:25:26 | INFO     | train                     | Train stage complete ✓
+2026-04-07 10:25:28 | INFO     | evaluate                  | Logger 'evaluate' initialised → logs/pipeline_20260407.log
+2026-04-07 10:25:28 | INFO     | evaluate                  | === STAGE: evaluate ===
+2026-04-07 10:25:28 | INFO     | evaluate                  | Loaded metrics for 7 models
+2026-04-07 10:25:28 | INFO     | evaluate                  | 
+=======================================================
+2026-04-07 10:25:28 | INFO     | evaluate                  | FINAL MODEL RANKING (lower RMSE = better)
+2026-04-07 10:25:28 | INFO     | evaluate                  | =======================================================
+2026-04-07 10:25:28 | INFO     | evaluate                  |   #1  xgboost       RMSE = 10.78 ← BEST
+2026-04-07 10:25:28 | INFO     | evaluate                  |   #2  ar            RMSE = 188.97
+2026-04-07 10:25:28 | INFO     | evaluate                  |   #3  sarimax       RMSE = 391.61
+2026-04-07 10:25:28 | INFO     | evaluate                  |   #4  arimax        RMSE = 470.07
+2026-04-07 10:25:28 | INFO     | evaluate                  |   #5  arima         RMSE = 495.38
+2026-04-07 10:25:28 | INFO     | evaluate                  |   #6  sarima        RMSE = 526.47
+2026-04-07 10:25:28 | INFO     | evaluate                  |   #7  prophet       RMSE = 14677.81
+2026-04-07 10:25:28 | INFO     | evaluate                  | =======================================================
+2026-04-07 10:25:28 | INFO     | evaluate                  | Best model: xgboost  RMSE=10.78
+2026-04-07 10:25:28 | INFO     | evaluate                  | ✓ Promoted xgboost.pkl → best_model.pkl
+2026-04-07 10:25:28 | INFO     | evaluate                  | Best model info saved → models\best_model_info.json
+2026-04-07 10:25:28 | INFO     | evaluate                  | Full evaluation report → reports/evaluation.json
+2026-04-07 10:25:28 | INFO     | evaluate                  | Evaluate stage complete ✓
+2026-04-07 10:26:12 | INFO     | app                       | Logger 'app' initialised → logs/pipeline_20260407.log
+2026-04-07 10:26:36 | INFO     | app                       | Logger 'app' initialised → logs/pipeline_20260407.log
+2026-04-07 10:29:44 | INFO     | app                       | Logger 'app' initialised → logs/pipeline_20260407.log
+2026-04-07 10:30:27 | INFO     | app                       | Forecast horizon=30 stock=200.0 order=5814.2
+2026-04-07 10:30:45 | INFO     | app                       | Forecast horizon=14 stock=20.0 order=2825.4
+2026-04-07 10:37:03 | INFO     | app                       | Logger 'app' initialised → logs/pipeline_20260407.log

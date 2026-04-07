@@ -1,0 +1,71 @@
+stages:
+
+  generate:
+    cmd: python dataset.py
+    deps:
+      - dataset.py
+      - config.yaml
+    outs:
+      - data/raw/sales.csv
+    params:
+      - params.yaml:
+          - data.n_rows
+          - data.n_stores
+          - data.n_products
+
+  ingest:
+    cmd: python pipeline/ingest.py
+    deps:
+      - pipeline/ingest.py
+      - data/raw/sales.csv
+    outs:
+      - data/interim/validated.csv
+
+  features:
+    cmd: python pipeline/features.py
+    deps:
+      - pipeline/features.py
+      - data/interim/validated.csv
+      - config.yaml
+    outs:
+      - data/processed/features.csv
+      - data/processed/scaler.pkl
+    params:
+      - params.yaml:
+          - data.test_split
+
+  train:
+    cmd: python pipeline/train.py
+    deps:
+      - pipeline/train.py
+      - data/processed/features.csv
+      - config.yaml
+    outs:
+      - models/ar.pkl
+      - models/arima.pkl
+      - models/arimax.pkl
+      - models/sarima.pkl
+      - models/sarimax.pkl
+      - models/prophet.pkl
+      - models/xgboost.pkl
+      - models/metrics.json
+    params:
+      - params.yaml:
+          - models.ar.search.n_samples
+          - models.arima.search.n_samples
+          - models.arimax.search.n_samples
+          - models.sarima.search.n_samples
+          - models.sarimax.search.n_samples
+          - models.prophet.changepoint_prior_scale
+          - models.xgboost.search.n_iter
+          - models.xgboost.search.cv
+
+  evaluate:
+    cmd: python pipeline/evaluate.py
+    deps:
+      - pipeline/evaluate.py
+      - models/metrics.json
+    outs:
+      - models/best_model.pkl
+      - models/best_model_info.json
+      - reports/evaluation.json
